@@ -72,6 +72,11 @@
       <button class="tool" id="clearFormat" title="Quitar formato">Tx</button>
     </div>
 
+    <div class="group">
+      <button class="btn-ghost" id="openDocBtn">📂 Abrir Word</button>
+      <input type="file" id="openDocInput" accept=".docx" hidden>
+    </div>
+
     <div class="spacer"></div>
     <span class="status" id="wordCount">0 palabras</span>
     <button class="btn-ghost" id="newPageBtn">Página nueva</button>
@@ -115,6 +120,10 @@
     <div class="group">
       <button class="btn-ghost" id="clearSheetBtn">Limpiar todo</button>
     </div>
+    <div class="group">
+      <button class="btn-ghost" id="openXlsBtn">📂 Abrir Excel</button>
+      <input type="file" id="openXlsInput" accept=".xlsx,.xls,.csv" hidden>
+    </div>
     <div class="spacer"></div>
     <span class="status" id="cellRef">—</span>
     <button class="btn-primary" id="downloadXlsBtn">⬇ Descargar Excel (.xls)</button>
@@ -150,6 +159,8 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>

@@ -202,6 +202,35 @@ tableToolbar.addEventListener('click', (e)=>{
   updateWordCount();
 });
 
+/* ----- Abrir un .docx existente para leerlo y editarlo ----- */
+document.getElementById('openDocBtn').addEventListener('click', ()=>{
+  document.getElementById('openDocInput').click();
+});
+document.getElementById('openDocInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith('.docx')){
+    showToast('Solo se pueden abrir archivos .docx (Word moderno)');
+    e.target.value = '';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    mammoth.convertToHtml({ arrayBuffer: ev.target.result })
+      .then(result=>{
+        page.innerHTML = result.value || '<p><br></p>';
+        updateWordCount();
+        showToast('Documento cargado ✓ ya puedes editarlo');
+      })
+      .catch(err=>{
+        console.error(err);
+        showToast('No se pudo leer el archivo. Asegúrate de que sea un .docx válido.');
+      });
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+
 /* ----- Exportar documento como .doc (compatible con Word) ----- */
 document.getElementById('downloadDocBtn').addEventListener('click', ()=>{
   const content = page.innerHTML;
@@ -466,6 +495,50 @@ function recalcAll(){
       td.textContent = val;
     }
   });
+}
+
+/* ----- Abrir un Excel/CSV existente para leerlo y editarlo ----- */
+document.getElementById('openXlsBtn').addEventListener('click', ()=>{
+  document.getElementById('openXlsInput').click();
+});
+document.getElementById('openXlsInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      const data = new Uint8Array(ev.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const ws = workbook.Sheets[firstSheetName];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      loadDataIntoSheet(rows);
+      showToast(`Hoja "${firstSheetName}" cargada ✓ ya puedes editarla`);
+    }catch(err){
+      console.error(err);
+      showToast('No se pudo leer el archivo. Verifica que sea .xlsx, .xls o .csv válido.');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+  e.target.value = '';
+});
+
+function loadDataIntoSheet(rows){
+  const maxCols = rows.reduce((max, r) => Math.max(max, r.length), 1);
+  numRows = Math.max(rows.length, 20);
+  numCols = Math.max(maxCols, 8);
+  buildSheet();
+  rows.forEach((row, r)=>{
+    row.forEach((val, c)=>{
+      if(val === '' || val === undefined || val === null) return;
+      const ref = colLetter(c) + (r + 1);
+      const td = sheetEl.querySelector(`[data-cell="${ref}"]`);
+      if(td) td.textContent = String(val);
+    });
+  });
+  formulaInput.value = '';
+  cellRefEl.textContent = '—';
+  selectedCell = null;
 }
 
 /* ----- Exportar hoja como .xls (compatible con Excel) ----- */
