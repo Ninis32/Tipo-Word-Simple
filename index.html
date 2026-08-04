@@ -13,6 +13,7 @@
   <nav class="tabs">
     <button class="tab active" data-view="doc">📄 Documento</button>
     <button class="tab" data-view="sheet">📊 Hoja de cálculo</button>
+    <button class="tab" data-view="pdf">📕 Ver / Anotar PDF</button>
   </nav>
 </header>
 
@@ -75,11 +76,14 @@
     <div class="group">
       <button class="btn-ghost" id="openDocBtn">📂 Abrir Word</button>
       <input type="file" id="openDocInput" accept=".docx" hidden>
+      <button class="btn-ghost" id="openPdfBtn">📂 Abrir PDF</button>
+      <input type="file" id="openPdfInput" accept=".pdf" hidden>
     </div>
 
     <div class="spacer"></div>
     <span class="status" id="wordCount">0 palabras</span>
     <button class="btn-ghost" id="newPageBtn">Página nueva</button>
+    <button class="btn-ghost" id="downloadPdfBtn">⬇ PDF</button>
     <button class="btn-primary" id="downloadDocBtn">⬇ Descargar Word (.doc)</button>
   </div>
 
@@ -140,6 +144,65 @@
 
 </section>
 
+<!-- ===================== VISTA VER / ANOTAR PDF ===================== -->
+<section id="view-pdf" class="view">
+
+  <div class="toolbar">
+    <div class="group">
+      <button class="btn-ghost" id="openPdfViewBtn">📂 Abrir PDF</button>
+      <input type="file" id="openPdfViewInput" accept=".pdf" hidden>
+    </div>
+
+    <div class="group">
+      <button class="tool" id="prevPageBtn" title="Página anterior">◀</button>
+      <span class="status" id="pdfPageInfo">— / —</span>
+      <button class="tool" id="nextPageBtn" title="Página siguiente">▶</button>
+    </div>
+
+    <div class="group">
+      <button class="tool" id="zoomOutBtn" title="Alejar">−</button>
+      <span class="status" id="zoomInfo">100%</span>
+      <button class="tool" id="zoomInBtn" title="Acercar">+</button>
+    </div>
+
+    <div class="group">
+      <button class="tool annot-tool active" data-tool="pen" title="Lápiz">✎</button>
+      <button class="tool annot-tool" data-tool="highlighter" title="Resaltador">🖊</button>
+      <button class="tool annot-tool" data-tool="text" title="Añadir texto">T</button>
+      <button class="tool annot-tool" data-tool="eraser" title="Borrar anotación">⌫</button>
+    </div>
+
+    <div class="group">
+      <input type="color" id="annotColor" title="Color" value="#ff3b30">
+      <select id="annotWidth" title="Grosor">
+        <option value="2">Fino</option>
+        <option value="4" selected>Medio</option>
+        <option value="8">Grueso</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <button class="btn-ghost" id="undoAnnotBtn">Deshacer</button>
+      <button class="btn-ghost" id="clearAnnotBtn">Limpiar página</button>
+    </div>
+
+    <div class="spacer"></div>
+    <button class="btn-primary" id="downloadAnnotPdfBtn">⬇ Descargar PDF anotado</button>
+  </div>
+
+  <div class="pdf-empty" id="pdfEmptyState">
+    <p>Abre un PDF para verlo y anotarlo tal cual, sin perder su formato original.</p>
+  </div>
+
+  <div class="pdf-stage" id="pdfStage" style="display:none;">
+    <div class="pdf-canvas-wrap">
+      <canvas id="pdfBaseCanvas"></canvas>
+      <canvas id="pdfAnnotCanvas"></canvas>
+    </div>
+  </div>
+
+</section>
+
 <!-- Modal: dimensiones de tabla -->
 <div id="tableModal" class="modal-overlay hidden">
   <div class="modal">
@@ -161,6 +224,9 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="script.js"></script>
 </body>
 </html>
