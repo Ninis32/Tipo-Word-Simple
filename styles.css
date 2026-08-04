@@ -293,6 +293,42 @@ input[type=color]{ width:36px; padding:2px; cursor:pointer; }
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
 
+.hidden{ display:none !important; }
+
+/* ===== PDF viewer / annotator ===== */
+button.tool.annot-tool.active{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+
+.pdf-empty{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:60vh;
+  color:#8a92a3;
+  font-size:14px;
+  text-align:center;
+  padding:20px;
+}
+.pdf-stage{
+  display:flex;
+  justify-content:center;
+  padding:24px 16px 80px;
+  overflow:auto;
+  background:var(--bg);
+}
+.pdf-canvas-wrap{
+  position:relative;
+  box-shadow:0 1px 3px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08);
+  background:#fff;
+  line-height:0;
+}
+.pdf-canvas-wrap canvas{ display:block; }
+#pdfAnnotCanvas{
+  position:absolute;
+  top:0; left:0;
+  touch-action:none;
+  cursor:crosshair;
+}
+
 /* ===== Mobile ===== */
 @media (max-width:860px){
   #page{ padding:36px 22px; }

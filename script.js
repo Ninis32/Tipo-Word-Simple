@@ -661,6 +661,8 @@ updateWordCount();
 (function(){
   const openBtn = document.getElementById('openPdfViewBtn');
   const input = document.getElementById('openPdfViewInput');
+  const newBlankBtn = document.getElementById('newBlankPageBtn');
+  const addBlankPageBtn = document.getElementById('addBlankPageBtn');
   const emptyState = document.getElementById('pdfEmptyState');
   const stage = document.getElementById('pdfStage');
   const baseCanvas = document.getElementById('pdfBaseCanvas');
@@ -670,7 +672,12 @@ updateWordCount();
   const pageInfo = document.getElementById('pdfPageInfo');
   const zoomInfo = document.getElementById('zoomInfo');
 
+  const BLANK_W = 595;  // ancho A4 en puntos (mismo sistema que usa pdf.js)
+  const BLANK_H = 842;  // alto A4 en puntos
+
+  let mode = 'none'; // 'none' | 'pdf' | 'blank'
   let pdfDoc = null;
+  let blankPageCount = 1;
   let currentPage = 1;
   let scale = 1.3;
   let currentTool = 'pen';
@@ -683,6 +690,10 @@ updateWordCount();
   if(!window.pdfjsLib){ return; }
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
+  function totalPages(){
+    return mode === 'pdf' && pdfDoc ? pdfDoc.numPages : blankPageCount;
+  }
+
   openBtn.addEventListener('click', ()=> input.click());
   input.addEventListener('change', async (e)=>{
     const file = e.target.files[0];
@@ -690,10 +701,12 @@ updateWordCount();
     try{
       const buf = await file.arrayBuffer();
       pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+      mode = 'pdf';
       currentPage = 1;
       Object.keys(annotations).forEach(k => delete annotations[k]);
       emptyState.style.display = 'none';
       stage.style.display = 'flex';
+      addBlankPageBtn.classList.add('hidden');
       await renderPage();
       showToast(`PDF cargado ✓ ${pdfDoc.numPages} página(s)`);
     }catch(err){
@@ -703,15 +716,44 @@ updateWordCount();
     e.target.value = '';
   });
 
+  newBlankBtn.addEventListener('click', ()=>{
+    mode = 'blank';
+    pdfDoc = null;
+    blankPageCount = 1;
+    currentPage = 1;
+    Object.keys(annotations).forEach(k => delete annotations[k]);
+    emptyState.style.display = 'none';
+    stage.style.display = 'flex';
+    addBlankPageBtn.classList.remove('hidden');
+    renderPage();
+    showToast('Hoja en blanco lista ✓ ya puedes dibujar o escribir');
+  });
+
+  addBlankPageBtn.addEventListener('click', ()=>{
+    if(mode !== 'blank') return;
+    blankPageCount++;
+    currentPage = blankPageCount;
+    renderPage();
+  });
+
   async function renderPage(){
-    if(!pdfDoc) return;
-    const p = await pdfDoc.getPage(currentPage);
-    const viewport = p.getViewport({ scale });
-    baseCanvas.width = annotCanvas.width = viewport.width;
-    baseCanvas.height = annotCanvas.height = viewport.height;
-    await p.render({ canvasContext: baseCtx, viewport }).promise;
+    if(mode === 'pdf' && pdfDoc){
+      const p = await pdfDoc.getPage(currentPage);
+      const viewport = p.getViewport({ scale });
+      baseCanvas.width = annotCanvas.width = viewport.width;
+      baseCanvas.height = annotCanvas.height = viewport.height;
+      await p.render({ canvasContext: baseCtx, viewport }).promise;
+    } else if(mode === 'blank'){
+      const w = BLANK_W * scale, h = BLANK_H * scale;
+      baseCanvas.width = annotCanvas.width = w;
+      baseCanvas.height = annotCanvas.height = h;
+      baseCtx.fillStyle = '#ffffff';
+      baseCtx.fillRect(0, 0, w, h);
+    } else {
+      return;
+    }
     redrawAnnotations();
-    pageInfo.textContent = `${currentPage} / ${pdfDoc.numPages}`;
+    pageInfo.textContent = `${currentPage} / ${totalPages()}`;
     zoomInfo.textContent = Math.round(scale / 1.3 * 100) + '%';
   }
 
@@ -743,19 +785,19 @@ updateWordCount();
 
   /* ----- Navegación ----- */
   document.getElementById('prevPageBtn').addEventListener('click', ()=>{
-    if(!pdfDoc || currentPage <= 1) return;
+    if(mode === 'none' || currentPage <= 1) return;
     currentPage--; renderPage();
   });
   document.getElementById('nextPageBtn').addEventListener('click', ()=>{
-    if(!pdfDoc || currentPage >= pdfDoc.numPages) return;
+    if(mode === 'none' || currentPage >= totalPages()) return;
     currentPage++; renderPage();
   });
   document.getElementById('zoomInBtn').addEventListener('click', ()=>{
-    if(!pdfDoc) return;
+    if(mode === 'none') return;
     scale = Math.min(scale + 0.2, 3.5); renderPage();
   });
   document.getElementById('zoomOutBtn').addEventListener('click', ()=>{
-    if(!pdfDoc) return;
+    if(mode === 'none') return;
     scale = Math.max(scale - 0.2, 0.6); renderPage();
   });
 
@@ -776,7 +818,7 @@ updateWordCount();
   }
 
   annotCanvas.addEventListener('pointerdown', (e)=>{
-    if(!pdfDoc) return;
+    if(mode === 'none') return;
     const pos = getPos(e);
 
     if(currentTool === 'text'){
@@ -848,28 +890,43 @@ updateWordCount();
     }
   });
   document.getElementById('clearAnnotBtn').addEventListener('click', ()=>{
+    if(mode === 'none'){ showToast('Primero abre un PDF o crea una hoja en blanco.'); return; }
+    if(!annotations[currentPage] || !annotations[currentPage].length){
+      showToast('Esta página no tiene anotaciones que borrar.');
+      return;
+    }
     if(!confirm('¿Borrar todas las anotaciones de esta página?')) return;
     annotations[currentPage] = [];
     redrawAnnotations();
   });
 
-  /* ----- Descargar PDF anotado ----- */
+  /* ----- Descargar como PDF (funciona en modo PDF y en modo hoja en blanco) ----- */
   document.getElementById('downloadAnnotPdfBtn').addEventListener('click', async ()=>{
-    if(!pdfDoc){ showToast('Primero abre un PDF.'); return; }
+    if(mode === 'none'){ showToast('Primero abre un PDF o crea una hoja en blanco.'); return; }
     if(!window.jspdf){ showToast('No se pudo cargar el generador de PDF.'); return; }
-    showToast('Generando PDF anotado…');
+    showToast('Generando PDF…');
     const { jsPDF } = window.jspdf;
     const exportScale = 2; // buena calidad de imagen
     let outPdf = null;
+    const pages = totalPages();
 
-    for(let n = 1; n <= pdfDoc.numPages; n++){
-      const p = await pdfDoc.getPage(n);
-      const viewport = p.getViewport({ scale: exportScale });
+    for(let n = 1; n <= pages; n++){
       const tmpCanvas = document.createElement('canvas');
-      tmpCanvas.width = viewport.width;
-      tmpCanvas.height = viewport.height;
       const tmpCtx = tmpCanvas.getContext('2d');
-      await p.render({ canvasContext: tmpCtx, viewport }).promise;
+      let widthPx, heightPx;
+
+      if(mode === 'pdf'){
+        const p = await pdfDoc.getPage(n);
+        const viewport = p.getViewport({ scale: exportScale });
+        widthPx = viewport.width; heightPx = viewport.height;
+        tmpCanvas.width = widthPx; tmpCanvas.height = heightPx;
+        await p.render({ canvasContext: tmpCtx, viewport }).promise;
+      } else {
+        widthPx = BLANK_W * exportScale; heightPx = BLANK_H * exportScale;
+        tmpCanvas.width = widthPx; tmpCanvas.height = heightPx;
+        tmpCtx.fillStyle = '#ffffff';
+        tmpCtx.fillRect(0, 0, widthPx, heightPx);
+      }
 
       // dibuja las anotaciones de esta página encima, escaladas a exportScale
       const list = annotations[n] || [];
@@ -894,8 +951,8 @@ updateWordCount();
       });
 
       const imgData = tmpCanvas.toDataURL('image/jpeg', 0.95);
-      const pageWidthMm = (viewport.width / exportScale) * 0.264583;
-      const pageHeightMm = (viewport.height / exportScale) * 0.264583;
+      const pageWidthMm = (widthPx / exportScale) * 0.264583;
+      const pageHeightMm = (heightPx / exportScale) * 0.264583;
 
       if(!outPdf){
         outPdf = new jsPDF({ unit: 'mm', format: [pageWidthMm, pageHeightMm], orientation: pageWidthMm > pageHeightMm ? 'landscape' : 'portrait' });
@@ -905,8 +962,8 @@ updateWordCount();
       outPdf.addImage(imgData, 'JPEG', 0, 0, pageWidthMm, pageHeightMm);
     }
 
-    outPdf.save(`pdf-anotado-${today()}.pdf`);
-    showToast('PDF anotado descargado ✓');
+    outPdf.save(`pdf-${today()}.pdf`);
+    showToast('PDF descargado ✓');
   });
 })();
 

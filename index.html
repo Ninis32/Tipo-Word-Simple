@@ -151,12 +151,14 @@
     <div class="group">
       <button class="btn-ghost" id="openPdfViewBtn">📂 Abrir PDF</button>
       <input type="file" id="openPdfViewInput" accept=".pdf" hidden>
+      <button class="btn-ghost" id="newBlankPageBtn">🆕 Hoja en blanco</button>
     </div>
 
     <div class="group">
       <button class="tool" id="prevPageBtn" title="Página anterior">◀</button>
       <span class="status" id="pdfPageInfo">— / —</span>
       <button class="tool" id="nextPageBtn" title="Página siguiente">▶</button>
+      <button class="btn-ghost hidden" id="addBlankPageBtn">+ Página</button>
     </div>
 
     <div class="group">
@@ -191,7 +193,7 @@
   </div>
 
   <div class="pdf-empty" id="pdfEmptyState">
-    <p>Abre un PDF para verlo y anotarlo tal cual, sin perder su formato original.</p>
+    <p>Abre un PDF para verlo y anotarlo tal cual, sin perder su formato original — o crea una hoja en blanco para anotar desde cero.</p>
   </div>
 
   <div class="pdf-stage" id="pdfStage" style="display:none;">
