@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Editor de oficina — Documento y Hoja de cálculo</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="brand">📎 Editor de oficina</div>
+  <nav class="tabs">
+    <button class="tab active" data-view="doc">📄 Documento</button>
+    <button class="tab" data-view="sheet">📊 Hoja de cálculo</button>
+  </nav>
+</header>
+
+<!-- ===================== VISTA DOCUMENTO ===================== -->
+<section id="view-doc" class="view active">
+
+  <div class="toolbar">
+    <div class="group">
+      <select id="fontName" title="Fuente">
+        <option value="Calibri">Calibri</option>
+        <option value="Arial">Arial</option>
+        <option value="Georgia">Georgia</option>
+        <option value="'Times New Roman'">Times New Roman</option>
+        <option value="Verdana">Verdana</option>
+        <option value="'Courier New'">Courier New</option>
+      </select>
+      <select id="fontSize" title="Tamaño">
+        <option value="2">10</option>
+        <option value="3" selected>12</option>
+        <option value="4">14</option>
+        <option value="5">18</option>
+        <option value="6">24</option>
+        <option value="7">36</option>
+      </select>
+    </div>
+
+    <div class="group">
+      <button class="tool" data-cmd="bold" title="Negrita (Ctrl+B)"><b>B</b></button>
+      <button class="tool" data-cmd="italic" title="Cursiva (Ctrl+I)"><i>I</i></button>
+      <button class="tool" data-cmd="underline" title="Subrayado (Ctrl+U)"><u>U</u></button>
+      <button class="tool" data-cmd="strikeThrough" title="Tachado"><s>S</s></button>
+    </div>
+
+    <div class="group">
+      <input type="color" id="textColor" title="Color de texto" value="#111111">
+      <input type="color" id="hiliteColor" title="Resaltado" value="#fff59d">
+    </div>
+
+    <div class="group">
+      <button class="tool" data-cmd="justifyLeft" title="Alinear izquierda">⯇</button>
+      <button class="tool" data-cmd="justifyCenter" title="Centrar">≡</button>
+      <button class="tool" data-cmd="justifyRight" title="Alinear derecha">⯈</button>
+      <button class="tool" data-cmd="justifyFull" title="Justificar">☰</button>
+    </div>
+
+    <div class="group">
+      <button class="tool" data-cmd="insertUnorderedList" title="Lista con viñetas">•</button>
+      <button class="tool" data-cmd="insertOrderedList" title="Lista numerada">1.</button>
+      <button class="tool" data-cmd="indent" title="Aumentar sangría">→|</button>
+      <button class="tool" data-cmd="outdent" title="Disminuir sangría">|←</button>
+    </div>
+
+    <div class="group">
+      <button class="tool" id="insertTableBtn" title="Insertar tabla">⊞</button>
+      <button class="tool" data-cmd="undo" title="Deshacer (Ctrl+Z)">↶</button>
+      <button class="tool" data-cmd="redo" title="Rehacer (Ctrl+Y)">↷</button>
+      <button class="tool" id="clearFormat" title="Quitar formato">Tx</button>
+    </div>
+
+    <div class="spacer"></div>
+    <span class="status" id="wordCount">0 palabras</span>
+    <button class="btn-ghost" id="newPageBtn">Página nueva</button>
+    <button class="btn-primary" id="downloadDocBtn">⬇ Descargar Word (.doc)</button>
+  </div>
+
+  <div class="stage">
+    <div id="page" contenteditable="true" data-placeholder="Empieza a escribir o pega tu texto aquí…"></div>
+  </div>
+
+  <!-- Barra flotante que aparece cuando el cursor está dentro de una tabla -->
+  <div id="tableToolbar" class="table-toolbar hidden">
+    <button data-action="rowAbove" title="Añadir fila arriba">➕ Fila ↑</button>
+    <button data-action="rowBelow" title="Añadir fila abajo">➕ Fila ↓</button>
+    <button data-action="colLeft" title="Añadir columna izquierda">➕ Col ←</button>
+    <button data-action="colRight" title="Añadir columna derecha">➕ Col →</button>
+    <button data-action="delRow" title="Eliminar fila">🗑 Fila</button>
+    <button data-action="delCol" title="Eliminar columna">🗑 Col</button>
+    <button data-action="delTable" title="Eliminar tabla">🗑 Tabla</button>
+  </div>
+
+</section>
+
+<!-- ===================== VISTA HOJA DE CÁLCULO ===================== -->
+<section id="view-sheet" class="view">
+
+  <div class="toolbar">
+    <div class="group">
+      <button class="tool" data-scmd="bold" title="Negrita"><b>B</b></button>
+      <button class="tool" data-scmd="italic" title="Cursiva"><i>I</i></button>
+      <button class="tool" data-scmd="justifyLeft" title="Alinear izquierda">⯇</button>
+      <button class="tool" data-scmd="justifyCenter" title="Centrar">≡</button>
+      <button class="tool" data-scmd="justifyRight" title="Alinear derecha">⯈</button>
+    </div>
+    <div class="group">
+      <button class="btn-ghost" id="addRowBtn">+ Fila</button>
+      <button class="btn-ghost" id="addColBtn">+ Columna</button>
+      <button class="btn-ghost" id="delRowBtn">− Fila</button>
+      <button class="btn-ghost" id="delColBtn">− Columna</button>
+    </div>
+    <div class="group">
+      <button class="btn-ghost" id="clearSheetBtn">Limpiar todo</button>
+    </div>
+    <div class="spacer"></div>
+    <span class="status" id="cellRef">—</span>
+    <button class="btn-primary" id="downloadXlsBtn">⬇ Descargar Excel (.xls)</button>
+  </div>
+
+  <div class="formula-bar">
+    <span class="fx-label">fx</span>
+    <input type="text" id="formulaInput" placeholder="Selecciona una celda, escribe un valor o una fórmula como =SUMA(A1:A3)">
+  </div>
+
+  <div class="sheet-wrap">
+    <table id="sheet" contenteditable="true"></table>
+  </div>
+
+</section>
+
+<!-- Modal: dimensiones de tabla -->
+<div id="tableModal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Insertar tabla</h3>
+    <label>Filas
+      <input type="number" id="tRows" min="1" max="30" value="3">
+    </label>
+    <label>Columnas
+      <input type="number" id="tCols" min="1" max="12" value="3">
+    </label>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="tableModalCancel">Cancelar</button>
+      <button class="btn-primary" id="tableModalOk">Insertar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Editor de texto — hoja en blanco</title>
+<style>
+  :root{
+    --ink:#1f2430;
+    --paper:#ffffff;
+    --bg:#e7e9ee;
+    --line:#d7dae1;
+    --accent:#2f5fdd;
+    --accent-soft:#eaf0ff;
+    --toolbar:#f4f5f8;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:'Segoe UI', Calibri, Arial, sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+  }
+
+  /* Toolbar */
+  .toolbar{
+    position:sticky; top:0; z-index:10;
+    background:var(--toolbar);
+    border-bottom:1px solid var(--line);
+    padding:8px 14px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    align-items:center;
+  }
+  .group{
+    display:flex;
+    gap:2px;
+    align-items:center;
+    padding:2px 6px;
+    border-right:1px solid var(--line);
+  }
+  .group:last-child{ border-right:none; }
+  button.tool{
+    background:transparent;
+    border:1px solid transparent;
+    border-radius:5px;
+    width:32px; height:32px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+    font-size:14px;
+    color:var(--ink);
+  }
+  button.tool:hover{ background:#e2e6ee; }
+  button.tool.active{ background:var(--accent-soft); border-color:var(--accent); color:var(--accent); }
+  select, input[type=color]{
+    border:1px solid var(--line);
+    border-radius:5px;
+    background:#fff;
+    height:32px;
+    padding:0 6px;
+    font-size:13px;
+    color:var(--ink);
+    cursor:pointer;
+  }
+  input[type=color]{ width:36px; padding:2px; }
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    height:34px;
+    padding:0 14px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+    display:flex; align-items:center; gap:6px;
+  }
+  .btn-primary:hover{ background:#2450bd; }
+  .btn-ghost{
+    background:#fff;
+    color:var(--ink);
+    border:1px solid var(--line);
+    border-radius:6px;
+    height:34px;
+    padding:0 12px;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .btn-ghost:hover{ background:#f0f1f4; }
+  .spacer{ flex:1; }
+  .status{
+    font-size:12px;
+    color:#6b7280;
+    padding-right:8px;
+    white-space:nowrap;
+  }
+
+  /* Page area */
+  .stage{
+    padding:32px 16px 80px;
+    display:flex;
+    justify-content:center;
+  }
+  #page{
+    width:794px;
+    max-width:100%;
+    min-height:1123px;
+    background:var(--paper);
+    box-shadow:0 1px 3px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08);
+    padding:96px 90px;
+    outline:none;
+    font-size:16px;
+    line-height:1.6;
+    color:#111;
+  }
+  #page:focus{ box-shadow:0 1px 3px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08), 0 0 0 3px var(--accent-soft); }
+  #page p{ margin:0 0 12px; }
+  #page:empty:before{
+    content: attr(data-placeholder);
+    color:#9aa0ab;
+  }
+
+  @media (max-width:860px){
+    #page{ padding:40px 28px; }
+    .toolbar{ overflow-x:auto; }
+  }
+
+  .toast{
+    position:fixed;
+    bottom:24px; left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:#1f2430;
+    color:#fff;
+    padding:10px 18px;
+    border-radius:8px;
+    font-size:13px;
+    opacity:0;
+    transition:opacity .2s, transform .2s;
+    pointer-events:none;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="group">
+    <select id="fontName" title="Fuente">
+      <option value="Calibri">Calibri</option>
+      <option value="Arial">Arial</option>
+      <option value="Georgia">Georgia</option>
+      <option value="'Times New Roman'">Times New Roman</option>
+      <option value="Verdana">Verdana</option>
+      <option value="'Courier New'">Courier New</option>
+    </select>
+    <select id="fontSize" title="Tamaño">
+      <option value="2">10</option>
+      <option value="3" selected>12</option>
+      <option value="4">14</option>
+      <option value="5">18</option>
+      <option value="6">24</option>
+      <option value="7">36</option>
+    </select>
+  </div>
+
+  <div class="group">
+    <button class="tool" data-cmd="bold" title="Negrita (Ctrl+B)"><b>B</b></button>
+    <button class="tool" data-cmd="italic" title="Cursiva (Ctrl+I)"><i>I</i></button>
+    <button class="tool" data-cmd="underline" title="Subrayado (Ctrl+U)"><u>U</u></button>
+    <button class="tool" data-cmd="strikeThrough" title="Tachado"><s>S</s></button>
+  </div>
+
+  <div class="group">
+    <input type="color" id="textColor" title="Color de texto" value="#111111">
+    <input type="color" id="hiliteColor" title="Resaltado" value="#fff59d">
+  </div>
+
+  <div class="group">
+    <button class="tool" data-cmd="justifyLeft" title="Alinear izquierda">⯇</button>
+    <button class="tool" data-cmd="justifyCenter" title="Centrar">≡</button>
+    <button class="tool" data-cmd="justifyRight" title="Alinear derecha">⯈</button>
+    <button class="tool" data-cmd="justifyFull" title="Justificar">☰</button>
+  </div>
+
+  <div class="group">
+    <button class="tool" data-cmd="insertUnorderedList" title="Lista con viñetas">•</button>
+    <button class="tool" data-cmd="insertOrderedList" title="Lista numerada">1.</button>
+    <button class="tool" data-cmd="indent" title="Aumentar sangría">→|</button>
+    <button class="tool" data-cmd="outdent" title="Disminuir sangría">|←</button>
+  </div>
+
+  <div class="group">
+    <button class="tool" data-cmd="undo" title="Deshacer (Ctrl+Z)">↶</button>
+    <button class="tool" data-cmd="redo" title="Rehacer (Ctrl+Y)">↷</button>
+    <button class="tool" id="clearFormat" title="Quitar formato">Tx</button>
+  </div>
+
+  <div class="spacer"></div>
+  <span class="status" id="wordCount">0 palabras</span>
+  <button class="btn-ghost" id="newPageBtn">Página nueva</button>
+  <button class="btn-primary" id="downloadBtn">⬇ Descargar Word (.doc)</button>
+</div>
+
+<div class="stage">
+  <div id="page" contenteditable="true" data-placeholder="Empieza a escribir o pega tu texto aquí…"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const page = document.getElementById('page');
+const toast = document.getElementById('toast');
+
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=> toast.classList.remove('show'), 2200);
+}
+
+// Ensure typing starts as paragraphs, not raw text nodes
+document.execCommand('defaultParagraphSeparator', false, 'p');
+page.focus();
+
+// Toolbar command buttons
+document.querySelectorAll('button.tool[data-cmd]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    page.focus();
+    document.execCommand(btn.dataset.cmd, false, null);
+    updateToolbarState();
+  });
+});
+
+document.getElementById('fontName').addEventListener('change', e=>{
+  page.focus();
+  document.execCommand('fontName', false, e.target.value);
+});
+document.getElementById('fontSize').addEventListener('change', e=>{
+  page.focus();
+  document.execCommand('fontSize', false, e.target.value);
+});
+document.getElementById('textColor').addEventListener('input', e=>{
+  page.focus();
+  document.execCommand('foreColor', false, e.target.value);
+});
+document.getElementById('hiliteColor').addEventListener('input', e=>{
+  page.focus();
+  document.execCommand('hiliteColor', false, e.target.value);
+});
+document.getElementById('clearFormat').addEventListener('click', ()=>{
+  page.focus();
+  document.execCommand('removeFormat', false, null);
+});
+document.getElementById('newPageBtn').addEventListener('click', ()=>{
+  if(page.innerText.trim().length && !confirm('¿Borrar todo el contenido y empezar una página nueva?')) return;
+  page.innerHTML = '';
+  page.focus();
+  updateWordCount();
+});
+
+// Keep pasted content but strip risky/bloated styles from external sources (Word/Copilot/web)
+page.addEventListener('paste', (e)=>{
+  e.preventDefault();
+  const html = (e.clipboardData || window.clipboardData).getData('text/html');
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  if(html){
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    tmp.querySelectorAll('script,style,meta,link').forEach(n=>n.remove());
+    tmp.querySelectorAll('*').forEach(n=>{
+      n.removeAttribute('class');
+      n.removeAttribute('id');
+      ['margin','position','max-width','min-height'].forEach(p=>n.style.removeProperty(p));
+    });
+    document.execCommand('insertHTML', false, tmp.innerHTML);
+  } else {
+    document.execCommand('insertText', false, text);
+  }
+  updateWordCount();
+});
+
+function updateToolbarState(){
+  document.querySelectorAll('button.tool[data-cmd]').forEach(btn=>{
+    try{
+      btn.classList.toggle('active', document.queryCommandState(btn.dataset.cmd));
+    }catch(_){}
+  });
+}
+page.addEventListener('keyup', ()=>{ updateToolbarState(); updateWordCount(); });
+page.addEventListener('mouseup', updateToolbarState);
+page.addEventListener('input', updateWordCount);
+
+function updateWordCount(){
+  const text = page.innerText.trim();
+  const count = text.length ? text.split(/\s+/).length : 0;
+  document.getElementById('wordCount').textContent = count + (count===1 ? ' palabra' : ' palabras');
+}
+
+// Keyboard shortcuts
+page.addEventListener('keydown', (e)=>{
+  if(e.ctrlKey || e.metaKey){
+    const k = e.key.toLowerCase();
+    if(k==='b'){ e.preventDefault(); document.execCommand('bold'); }
+    if(k==='i'){ e.preventDefault(); document.execCommand('italic'); }
+    if(k==='u'){ e.preventDefault(); document.execCommand('underline'); }
+  }
+});
+
+// Export as a .doc file Word can open directly (HTML wrapped with Word XML namespaces)
+document.getElementById('downloadBtn').addEventListener('click', ()=>{
+  const content = page.innerHTML;
+  const htmlDoc = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+  <head>
+    <meta charset="utf-8">
+    <title>Documento</title>
+    <!--[if gte mso 9]>
+    <xml>
+      <w:WordDocument>
+        <w:View>Print</w:View>
+        <w:Zoom>100</w:Zoom>
+        <w:DoNotOptimizeForBrowser/>
+      </w:WordDocument>
+    </xml>
+    <![endif]-->
+    <style>
+      body{ font-family: Calibri, Arial, sans-serif; font-size:12pt; }
+      p{ margin:0 0 10pt 0; }
+    </style>
+  </head>
+  <body>${content}</body>
+  </html>`;
+
+  const blob = new Blob(['\ufeff', htmlDoc], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const stamp = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `documento-${stamp}.doc`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast('Documento descargado ✓ Ábrelo con Word');
+});
+
+updateWordCount();
+</script>
+
+</body>
+</html>
